@@ -1,0 +1,5 @@
+metric,value
+n_pairs,60.0
+spearman_rho,0.48
+spearman_p,0.0001
+quadratic_weighted_kappa,0.431

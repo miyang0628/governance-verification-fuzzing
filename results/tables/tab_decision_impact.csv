@@ -1,0 +1,5 @@
+gate,threshold*,invalid_acceptance_rate,valid_rejection_rate,invalid_reaching_human_per100
+metric_gate (proxy faithfulness),3.0,0.14,0.731,7.02
+judge_gate (LLM judge qual.),4.0,0.614,0.14,30.7
+metric_gate (production faithfulness),0.0,1.0,0.0,50.0
+combined (judge AND proxy metric),4.0/3.0,0.073,0.784,3.65

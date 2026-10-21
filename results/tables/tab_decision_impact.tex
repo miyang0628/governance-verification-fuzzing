@@ -1,0 +1,10 @@
+\begin{tabular}{llrrr}
+\toprule
+gate & threshold* & invalid_acceptance_rate & valid_rejection_rate & invalid_reaching_human_per100 \\
+\midrule
+metric_gate (proxy faithfulness) & 3.000 & 0.140 & 0.731 & 7.020 \\
+judge_gate (LLM judge qual.) & 4.000 & 0.614 & 0.140 & 30.700 \\
+metric_gate (production faithfulness) & 0.000 & 1.000 & 0.000 & 50.000 \\
+combined (judge AND proxy metric) & 4.0/3.0 & 0.073 & 0.784 & 3.650 \\
+\bottomrule
+\end{tabular}
