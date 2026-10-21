@@ -57,7 +57,8 @@ identity). Alternatives: `verifier-robustness-credit`, `fuzzing-ai-governance`.
 │   ├── 01_generation.ipynb         # rating+rationale generation (gap-given/blind)
 │   ├── 02_perturbation.ipynb       # controlled defects P1–P5
 │   ├── 03_judge_metric.ipynb       # LLM judge + input-grounded faithfulness
-│   ├── 04_ablation.ipynb           # divergence tests, 2×2 ablation, agreement
+│   ├── 03b_inter_judge.ipynb       # secondary-judge re-scoring → Spearman ρ, weighted κ
+│   ├── 04_ablation.ipynb           # divergence tests, 2×2 ablation
 │   └── 05_figures_tables.ipynb     # final grayscale figures & tables
 ├── src/
 │   └── common.py        # shared paths, .env loader, grayscale plotting, savers
@@ -90,11 +91,12 @@ LLM_MODEL_STRONG=<strong model>
 
 ## Running
 
-Open the notebooks in `notebooks/` and run them in order (00 → 05). Each is a
-**single cell** with all code and English comments; each reads its inputs from
-`data/` and writes intermediates back to `data/`, and figures/tables to
-`results/`. Notebooks 01–03 call the LLM API — start with the small `MAX_CASES`
-cap in `01` to check cost, then raise it to the full override subset.
+Open the notebooks in `notebooks/` and run them in order
+(00 → 01 → 02 → 03 → 03b → 04 → 05). Each is a **single cell** with all code and
+English comments; each reads its inputs from `data/` and writes intermediates back
+to `data/`, and figures/tables to `results/`. Notebooks 01, 02, 03, and 03b call
+the LLM API — start with the small `MAX_CASES` cap in `01` to check cost, then
+raise it to the full override subset.
 
 ### Pipeline inputs/outputs
 
@@ -104,8 +106,14 @@ cap in `01` to check cost, then raise it to the full override subset.
 | 01 | `data/with_override.parquet` | `data/generated.parquet` |
 | 02 | `data/generated.parquet` | `data/perturbed.parquet` |
 | 03 | `data/perturbed.parquet` | `data/scored.parquet` |
+| 03b | `data/scored.parquet` (+ `perturbed.parquet` for text) | `data/interjudge.parquet`, `results/tables/tab_interjudge.csv` |
 | 04 | `data/scored.parquet` | divergence & ablation tables |
 | 05 | `data/scored.parquet`, tables | publication figures |
+
+Run in numeric order: **00 → 01 → 02 → 03 → 03b → 04 → 05**. Notebook `03b` is an
+optional reliability step: it re-scores a random sample with a second,
+different-tier judge and reports inter-judge agreement (Spearman ρ and a
+quadratic-weighted Cohen's κ) on the qualitative-adequacy axis.
 
 ## Data availability
 
