@@ -1,0 +1,8 @@
+metric,value
+n_rows,1219.0
+n_firms,361.0
+override_rows,114.0
+override_rate,0.094
+band_coverage_80,0.765
+residual_scale_mad,0.965
+notch_floor,1.45

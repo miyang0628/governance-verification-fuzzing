@@ -1,0 +1,5 @@
+generation,judge,P2_drop,P4_drop
+gap_given,informed,0.65,2.9
+gap_given,blind,0.3,2.0
+gap_blind,informed,0.25,1.1
+gap_blind,blind,0.3,1.25
