@@ -1,165 +1,208 @@
-# Fuzzing the Verification Layer of AI Governance
+# Fuzzing the Verification Layer of AI-Based Decision Support
 
-*Anonymous repository for double-blind peer review.*
-*Authors and affiliations are withheld. Manuscript under review at an anonymous venue.*
+Reproducibility repository for the paper **"Fuzzing the Verification Layer of
+AI-Based Decision Support: Reasoning-Validity Defects that Reference-Free Metrics
+Miss in Automated Credit Assessment."**
+
+> **Anonymized for double-blind review.** Author, affiliation, and funding details
+> are intentionally omitted and will be restored in the camera-ready version.
 
 ---
 
 ## Overview
 
-This repository accompanies a study that applies **metamorphic / fuzzing-style
-perturbations to the *verification layer* of AI governance** — the automated
-methods that decide whether an AI-generated judgment passes review. Using
-automated corporate credit assessment (AAA–D letter ratings with written
-rationales) as the empirical testbed, it shows that reference-free technical
-metrics (RAG-faithfulness style) are structurally insensitive to
-reasoning-validity defects that a governance framework's "verification"
-requirement is meant to catch, whereas an LLM judge detects them — and it
-diagnoses, with a generation × judging ablation, when apparent robustness is an
-artifact of the test design rather than a property of the verifier.
+AI governance regimes (the EU AI Act, the NIST AI RMF, Korea's AI Framework Act)
+require high-stakes AI systems to be verified for accuracy, robustness, and
+reliability. In practice that verification is often discharged with **reference-free
+technical metrics** (RAG-style faithfulness), which score whether an output is
+consistent with its inputs but set aside whether the resulting *judgment* is valid.
 
-The empirical corpus pairs public financial ratios and agency ratings with the
-firm's actual 10-K **Management's Discussion and Analysis (MD&A)** text, so the
-evaluated rationales are grounded in genuine disclosures rather than only in
-model-generated text.
+This repository **fuzzes the verification layer itself.** Using automated corporate
+credit assessment as a decision-support testbed, it applies controlled
+metamorphic/fuzzing-style perturbations to two parallel scoring channels — an **LLM
+judge** and an **input-grounded faithfulness metric** — and measures which defects
+each channel fails to register.
 
-## Method in brief
+### Key findings
 
-A quantitative stand-alone-credit-profile proxy with an 80% predictive interval
-yields a signed **notch gap** and isolates a **qualitative-override** subset.
-Each override's generated (rating, rationale) is subjected to five controlled
-perturbations, and every variant is scored on two channels — an **LLM judge**
-(qualitative-adequacy axis) and an **input-grounded faithfulness metric** —
-whose signed, paired, Holm-corrected difference is the metric–judgment
-divergence. A 2×2 generation × judging ablation separates what the judge
-detects on its own from what the data-generating protocol handed it.
+- **Reasoning-validity blind spot.** Reversing an override rationale's support
+  direction (P4) collapses the LLM judge (drop **1.79**, paired **d_z ≈ 1.24**,
+  Holm-corrected **p < 10⁻⁷**) while the input-grounded faithfulness metric barely
+  moves (**0.30**).
+- **Complementarity, not supremacy.** On a purely factual error (P3) the metric is
+  the stronger detector (drop **1.08** vs. judge 0.19; Holm **p < 0.001**) — the two
+  channels catch *different* defects.
+- **Not just grade inconsistency.** The P4 effect survives when the grade is hidden
+  from the judge, and an internally-consistent "wrong-direction" variant (P4b) is
+  penalized just as hard — the judge reacts to the *direction of the reasoning*, not
+  a grade–rationale mismatch.
+- **Robust.** The effect replicates across three judge models (d_z 0.46 / 0.71 /
+  1.26, weak→strong), is stable across five generation seeds (d_z 1.34–1.62), and
+  its bootstrap CI excludes zero.
+- **Circularity diagnostic.** A generation×judging ablation separates the judge's
+  own competence from artifacts of how the audited outputs were produced.
+- **Governance mapping.** Each defect is mapped to the accuracy/robustness/
+  verification clauses of the three regimes; only **NIST MEASURE 2.13** explicitly
+  requires the verification *method itself* to be verified.
 
-| Code | Perturbation | A sound judge should… |
-|------|--------------|------------------------|
-| P1 | rating–rationale inconsistency | drop |
-| P2 | remove qualitative justification | drop (but see the circularity ablation) |
-| P3 | factual error | the **metric** is the better detector here |
-| P4 | direction flip | drop — the central, robust signal |
-| P5 | verbosity padding | stay robust (surface form only) |
+---
 
-## Suggested repository name
-
-`governance-verification-fuzzing` (neutral, descriptive, reveals no author
-identity). Alternatives: `verifier-robustness-credit`, `fuzzing-ai-governance`.
-
-## Repository layout
+## Repository structure
 
 ```
 .
-├── data/                # inputs & intermediates (NOT committed — see below)
-├── notebooks/           # single-cell notebooks, run in numeric order
-│   ├── 00_proxy_override.ipynb     # SACP proxy, notch gap, override subset
-│   ├── 01_generation.ipynb         # rating+rationale generation (gap-given/blind)
-│   ├── 02_perturbation.ipynb       # controlled defects P1–P5
-│   ├── 03_judge_metric.ipynb       # LLM judge + input-grounded faithfulness
-│   ├── 03b_inter_judge.ipynb       # secondary-judge re-scoring → Spearman ρ, weighted κ
-│   ├── 04_ablation.ipynb           # divergence tests, 2×2 ablation
-│   └── 05_figures_tables.ipynb     # final grayscale figures & tables
-├── src/
-│   └── common.py        # shared paths, .env loader, grayscale plotting, savers
-├── results/
-│   ├── figures/         # PNG + PDF at 600 dpi (no captions)
-│   └── tables/          # CSV + LaTeX
+├── README.md
 ├── requirements.txt
 ├── .env.example
-└── .gitignore
+├── src/
+│   └── common.py              # shared paths, .env loader, grayscale plotting, savers
+├── notebooks/
+│   ├── 0_proxy_overrides.ipynb   # stand-alone proxy, notch gap, override subset
+│   ├── 1_generate_perturb.ipynb  # (LLM) rating+rationale generation, P1–P5 perturbations
+│   ├── 2_score.ipynb             # (LLM) judge + faithfulness + judge-models + construct + inter-judge
+│   ├── 3_tables.ipynb            # (offline) all statistics and tables
+│   ├── 4_figures.ipynb           # (offline) all figures + decision-impact simulation
+│   └── 5_diagnostics.ipynb       # (offline/LLM) override floor, P2 metric, P4b magnitude, seed stability
+├── paper/                    # LaTeX source (Elsevier elsarticle)
+│   ├── main.tex
+│   ├── appendix.tex
+│   ├── sections/
+│   ├── figures/
+│   └── references.bib
+├── data/                     # NOT redistributed — reconstructed from public sources (see below)
+└── results/
+    ├── figures/              # grayscale 600-dpi PNG + PDF
+    └── tables/               # CSV + LaTeX
 ```
+
+---
+
+## Pipeline
+
+All API spend is in notebooks **1** and **2**; notebooks **3**, **4**, and the
+offline blocks of **5** need no API. Run strictly in order:
+
+```
+0_proxy_overrides → 1_generate_perturb → 2_score → 3_tables → 4_figures → 5_diagnostics
+```
+
+Parquet checkpoints connect the notebooks:
+
+```
+0 → data/with_override.parquet
+1 → data/generated.parquet, data/perturbed.parquet
+2 → data/scored.parquet, data/judge_models.parquet,
+    data/construct_scored.parquet, data/interjudge.parquet
+3 → results/tables/*.csv (+ .tex)
+4 → results/figures/*.{png,pdf}, results/tables/tab_decision_impact.csv
+5 → results/tables/{tab_floor_sensitivity, tab_p2_metric_diagnosis,
+    tab_p4b_notch_sensitivity, tab_multiseed_p4, tab_override_summary}
+```
+
+The five perturbations (P1–P5) each corrupt one aspect of a generated
+`(rating, rationale)` pair while holding the rest fixed:
+
+| Code | Name | Manipulation |
+|---|---|---|
+| P1 | rating–rationale inconsistency | shift the grade by *k* notches, keep the text |
+| P2 | remove qualitative justification | delete the support clause(s), keep the grade |
+| P3 | factual error | inject a quantitative claim contradicting the input |
+| P4 | direction flip | reverse the support polarity, keep the grade |
+| P5 | verbosity control | pad with repetition; content unchanged |
+
+---
+
+## Data
+
+The corpus pairs three **public** layers; raw and intermediate data are **not
+redistributed** but are fully reconstructible:
+
+1. **Quantitative** — standardized financial ratios with agency ratings from a
+   public corporate-rating dataset (keyed by ticker, agency, rating date).
+2. **Narrative** — each firm's actual 10-K MD&A (Item 7) from the **EDGAR-CORPUS**
+   collection of SEC filings (keyed by CIK and fiscal year).
+3. **Linkage** — tickers resolved to CIKs via the SEC `company_tickers.json`
+   mapping; a rating in year *Y* is matched to the filing for year *Y* or *Y−1*.
+
+After excluding incorporation-by-reference MD&A stubs, the analysis corpus holds
+**1,219 (firm × rating date) instances across 361 firms**. The qualitative-override
+subset (outside the 80% predictive band **and** |notch gap| ≥ 1.5×MAD = 1.45) is
+**114 instances (9.4%)**; paired tests average same-firm-year instances, giving
+**99 unique override firm-years**.
+
+Place the reconstructed join at `data/corpus_main.parquet` before running
+notebook 0 (see the notebook header for the exact schema).
+
+---
 
 ## Setup
 
 ```bash
-python -m venv .venv && source .venv/bin/activate   # or conda
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env            # then fill in your OpenAI key
+cp .env.example .env     # then fill in your keys/model tiers
 ```
 
-Create a `.env` file at the repository root (used by every notebook):
+`.env`:
 
 ```
-OPENAI_API_KEY=<your key>
-LLM_MODEL_WEAK=<small model>
-LLM_MODEL_MID=<mid model>
-LLM_MODEL_STRONG=<strong model>
+OPENAI_API_KEY=sk-...
+LLM_MODEL_WEAK=gpt-4o-mini
+LLM_MODEL_MID=gpt-5.4-mini
+LLM_MODEL_STRONG=gpt-5.4
 ```
 
-`.env` is git-ignored and must never be committed.
+`requirements.txt`: `numpy`, `pandas`, `pyarrow`, `scikit-learn`, `scipy`,
+`statsmodels`, `matplotlib`, `seaborn`, `openai`, `python-dotenv`.
+
+---
 
 ## Running
 
-Open the notebooks in `notebooks/` and run them in order
-(00 → 01 → 02 → 03 → 03b → 04 → 05). Each is a **single cell** with all code and
-English comments; each reads its inputs from `data/` and writes intermediates back
-to `data/`, and figures/tables to `results/`. Notebooks 01, 02, 03, and 03b call
-the LLM API — start with the small `MAX_CASES` cap in `01` to check cost, then
-raise it to the full override subset.
+Open the notebooks in order (Jupyter / VS Code) and run each top-to-bottom.
+Cost controls live at the top of each LLM notebook:
 
-### Pipeline inputs/outputs
+- `1_generate_perturb`: `MAX_CASES = None` (full 114 override subset) — set an int
+  for a cheap smoke-test first.
+- `2_score`: toggle `RUN_JUDGE_PROXY`, `RUN_PRODUCTION_FAITH`, `RUN_JUDGE_MODELS`,
+  `RUN_CONSTRUCT`, `RUN_INTERJUDGE`; `MAX_WORKERS` sets API concurrency.
+- Faithfulness is computed only on the `gap_given` outputs any analysis consumes,
+  and calls run concurrently, so a full run is ≈ 8.4k API calls.
 
-| Notebook | reads | writes |
-|----------|-------|--------|
-| 00 | `data/corpus_main.parquet` | `data/with_override.parquet`, override figure/table |
-| 01 | `data/with_override.parquet` | `data/generated.parquet` |
-| 02 | `data/generated.parquet` | `data/perturbed.parquet` |
-| 03 | `data/perturbed.parquet` | `data/scored.parquet` |
-| 03b | `data/scored.parquet` (+ `perturbed.parquet` for text) | `data/interjudge.parquet`, `results/tables/tab_interjudge.csv` |
-| 04 | `data/scored.parquet` | divergence & ablation tables |
-| 05 | `data/scored.parquet`, tables | publication figures |
+### Reproducibility notes
 
-Run in numeric order: **00 → 01 → 02 → 03 → 03b → 04 → 05**. Notebook `03b` is an
-optional reliability step: it re-scores a random sample with a second,
-different-tier judge and reports inter-judge agreement (Spearman ρ and a
-quadratic-weighted Cohen's κ) on the qualitative-adequacy axis.
+- Temperatures are fixed (0 for judging and the metric, low for generation) and
+  the model configuration is read from `.env`; the OpenAI `seed` parameter is used
+  where supported.
+- LLM scores are **not** bit-for-bit reproducible across provider API versions, so
+  the effect **directions** and the divergence structure — not point magnitudes —
+  are the findings we stand behind. Notebook 5 quantifies run-to-run stability.
 
-## Data availability
+---
 
-Raw and intermediate data are **not** redistributed in this repository
-(`data/` is git-ignored) for licensing and size reasons. All inputs are public
-and reconstructible:
+## Building the paper
 
-- **Financial ratios + agency ratings** — a public corporate-rating dataset
-  (financial ratios keyed by ticker, agency, and rating date).
-- **MD&A narrative text** — the `edgar-corpus` collection of SEC 10-K filings,
-  section 7 (MD&A). Fetched per year as JSON Lines and joined to the ratings on
-  (CIK, fiscal year); CIK is resolved from the ticker via the SEC
-  `company_tickers.json` mapping.
+```bash
+cd paper
+pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
+```
 
-A build step assembles `data/corpus_main.parquet` (financials + rating + MD&A).
-MD&A entries below a length floor (incorporation-by-reference stubs) are flagged
-and excluded from the main corpus; a sensitivity check confirms the exclusion
-does not materially change the sector composition.
+Elsevier `elsarticle` class; references in the numbered Elsevier style.
 
-## Methodological notes
+---
 
-- **Leakage control.** The same firm appears in several rows (multiple rating
-  dates/agencies). The proxy is fit with a **firm-grouped** cross-validation
-  split (GroupKFold on the firm identifier) so it predicts genuinely unseen
-  firms; a plain shuffled split collapses the residual scale and erases the
-  override subset.
-- **Override floor.** The override floor scales to the realized residual spread
-  rather than using a fixed notch cutoff, so the predictive-band criterion is
-  not starved when the proxy is accurate.
+## License & citation
 
-## Figures
+Code released for reproduction. A citation entry and license will be added with the
+camera-ready version.
 
-All figures are produced with seaborn in **grayscale**, **without captions**
-(captions live in the manuscript), at **600 dpi**, and saved as both **PNG and
-PDF** via `src/common.save_fig`.
-
-## Reproducibility
-
-A fixed random seed governs the proxy's cross-validation folds. LLM calls use
-temperature 0 for judging/metric and low temperature for generation; LLM outputs
-are not bit-for-bit deterministic across API versions, so exact score magnitudes
-may vary while the effect **directions** and the **divergence structure** are
-the reported findings. To reproduce end-to-end, reconstruct
-`data/corpus_main.parquet` as described above and run the notebooks in order.
-
-## License
-
-Code released under the MIT License (see `LICENSE`). Third-party data are
-subject to their own licenses.
+```bibtex
+@article{anonymous_fuzzing_verification,
+  title   = {Fuzzing the Verification Layer of AI-Based Decision Support:
+             Reasoning-Validity Defects that Reference-Free Metrics Miss in
+             Automated Credit Assessment},
+  author  = {Anonymous},
+  journal = {under review},
+  year    = {2026}
+}
+```
